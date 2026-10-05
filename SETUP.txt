@@ -1,0 +1,193 @@
+===============================================================================
+ KANJI TRAINER - DEPLOYMENT SETUP
+ Supabase (cloud sync) + Vercel (hosting)
+ Follow these after the code has been pushed to a Git remote.
+===============================================================================
+
+
+-------------------------------------------------------------------------------
+ PART 1 - DEPLOY TO VERCEL   (do this first, you need the URL for Supabase)
+-------------------------------------------------------------------------------
+
+ 1. Go to https://vercel.com and sign in with your Git provider.
+
+ 2. Click  Add New...  ->  Project.
+
+ 3. Find your repository in the list and click  Import.
+
+ 4. On the configure screen:
+      Framework Preset  : Other
+      Root Directory    : ./            (leave as is)
+      Build and Output Settings -> expand, leave all three EMPTY / toggles off:
+          Build Command     : empty
+          Output Directory  : empty
+          Install Command   : empty
+      Environment Variables : none needed
+
+ 5. Click  Deploy  and wait roughly 20 seconds.
+
+ 6. Copy your live URL, for example:
+        https://kanji-trainer-abc123.vercel.app
+
+ 7. Open it and confirm the kanji grid loads.
+    STOP HERE if it does not - fix that before adding Supabase.
+
+ NOTE: every later "git push" to main redeploys automatically.
+
+
+-------------------------------------------------------------------------------
+ PART 2 - CREATE THE SUPABASE PROJECT
+-------------------------------------------------------------------------------
+
+ 8. Go to https://supabase.com/dashboard  ->  New project.
+      Name              : anything, e.g. kanji-trainer
+      Database password : generate one, store it in your password manager
+                          (the app never needs it)
+      Region            : the one nearest you
+      Plan              : Free
+
+ 9. Wait for provisioning (about 2 minutes).
+
+
+ --- Create the table ---------------------------------------------------------
+
+10. Left sidebar  ->  SQL Editor  ->  New query.
+
+11. Open  supabase/schema.sql  in VS Code, copy the WHOLE file,
+    paste it into the editor.
+
+12. Click  Run.  You should see:  "Success. No rows returned".
+
+13. Verify: sidebar -> Table Editor -> a "progress" table exists and shows a
+    green "RLS enabled" badge.
+
+
+ --- Allow redirects back to your site ----------------------------------------
+
+14. Sidebar  ->  Authentication  ->  URL Configuration.
+
+15. Site URL:
+        https://kanji-trainer-abc123.vercel.app
+    (your actual Vercel URL, no trailing slash)
+
+16. Redirect URLs  ->  Add URL, add BOTH of these:
+        https://kanji-trainer-abc123.vercel.app/**
+        http://localhost:8080/**
+    (the second one lets you sign in while testing locally with
+     pwsh -File tools/serve.ps1)
+
+17. Click  Save.
+
+
+ --- Copy the keys ------------------------------------------------------------
+
+18. Sidebar  ->  Project Settings (gear icon)  ->  API.
+
+19. Copy two values:
+        Project URL        ->  https://xxxxxxxx.supabase.co
+        Project API keys   ->  the  "anon  public"  key
+                               (newer dashboards label it "Publishable key")
+
+    !! WARNING !!
+    Never copy the  service_role / secret  key into this project.
+    It bypasses row level security.
+
+
+-------------------------------------------------------------------------------
+ PART 3 - CONNECT THE APP        (choose OPTION A or OPTION B)
+-------------------------------------------------------------------------------
+
+ OPTION A - paste in the UI (nothing to redeploy)
+ ------------------------------------------------
+20. Open your Vercel URL  ->  Dashboard tab  ->  scroll to "Cloud sync".
+
+21. Paste the Project URL and the anon public key  ->  click  Connect.
+    The page reloads.
+
+22. Enter your email  ->  click  Send magic link.
+
+23. Open the email from Supabase, click the link.
+    You land back on the site, signed in.
+
+24. The panel now shows your email address and a "last sync" time.
+
+    The keys are stored in that browser's localStorage, so repeat steps
+    20-23 once per device.
+
+
+ OPTION B - bake the keys in (every device is pre-connected)
+ -----------------------------------------------------------
+20. Edit  assets/js/config.js :
+
+        const defaults = {
+          supabaseUrl: 'https://xxxxxxxx.supabase.co',
+          supabaseAnonKey: 'eyJhbGciOi...',
+        };
+
+21. Commit and push:
+
+        git add assets/js/config.js
+        git commit -m "Connect Supabase"
+        git push
+
+22. Vercel redeploys. Open the site  ->  Dashboard  ->  Cloud sync  ->
+    enter your email  ->  Send magic link  ->  click the link in the email.
+
+    The anon key is designed to be shipped in the browser; the RLS policies
+    created in step 12 are what actually protect the data.
+
+
+-------------------------------------------------------------------------------
+ PART 4 - VERIFY IT WORKS
+-------------------------------------------------------------------------------
+
+25. Go to  Recall  and run a 5-question session.
+
+26. Wait about 5 seconds, then in Supabase  ->  Table Editor  ->  progress  ->
+    click refresh. One row should exist, with your user_id and a populated
+    "data" column.
+
+27. Open the same URL on your phone  ->  Dashboard  ->  Cloud sync  ->
+    sign in with the same email. Your progress appears.
+
+
+-------------------------------------------------------------------------------
+ GOTCHAS
+-------------------------------------------------------------------------------
+
+ Magic link opens the site but you are still signed out
+     The URL is not in Redirect URLs (step 16).
+     Add it, including the  /**  suffix.
+
+ "Email rate limit exceeded"
+     Free-tier Supabase SMTP only allows a few mails per hour.
+     Wait, or configure your own SMTP under
+     Authentication -> Emails -> SMTP Settings.
+
+ "new row violates row-level security policy"
+     Step 12 did not run fully. Re-run supabase/schema.sql.
+
+ Panel shows "Could not load supabase-js"
+     esm.sh was unreachable (offline or blocked network).
+     The app keeps working locally; sync resumes when you are back online.
+
+ Vercel shows a file listing or a 404
+     Output Directory was not left empty in step 4.
+     Project -> Settings -> Build & Development Settings -> clear it ->
+     Redeploy.
+
+
+-------------------------------------------------------------------------------
+ LOCAL TESTING (optional)
+-------------------------------------------------------------------------------
+
+     pwsh -File tools/serve.ps1          then open http://localhost:8080/
+
+ ES modules need a real web server; opening index.html directly from disk
+ (file://) will not work.
+
+ To regenerate the data files in data/ :
+
+     pwsh -File tools/build-data.ps1
+
+===============================================================================

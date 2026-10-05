@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kanji Trainer · JLPT N5 / N4 / N3</title>
+  <meta name="description" content="Offline-friendly JLPT N5-N3 kanji trainer: stroke order, readings, vocabulary, sentences, recall drills and progress tracking.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#11151c">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>漢</text></svg>">
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo">漢</span><span>Kanji Trainer</span></div>
+    <nav class="tabs" id="nav">
+      <button data-view="learn" class="active">Learn</button>
+      <button data-view="recall">Recall</button>
+      <button data-view="dashboard">Dashboard</button>
+    </nav>
+    <div class="topbar-right">
+      <span class="streak" id="streakBadge" title="Current study streak">🔥 0</span>
+      <button class="icon-btn" id="themeBtn" title="Toggle light / dark theme">◐</button>
+    </div>
+  </header>
+
+  <main id="app">
+    <!-- ======================================================== LEARN ===== -->
+    <section id="view-learn" class="view">
+      <div class="panel browser">
+        <div class="filters">
+          <div class="seg" id="levelFilter">
+            <button data-level="5" class="active">N5</button>
+            <button data-level="4">N4</button>
+            <button data-level="3">N3</button>
+            <button data-level="all">All</button>
+          </div>
+          <input type="search" id="kanjiSearch" placeholder="Search kanji, meaning or reading…" autocomplete="off">
+          <select id="statusFilter" title="Filter by progress">
+            <option value="all">All progress</option>
+            <option value="new">Not started</option>
+            <option value="learning">Learning</option>
+            <option value="known">Known</option>
+            <option value="due">Due for review</option>
+            <option value="weak">Weak (mistakes)</option>
+          </select>
+        </div>
+        <div class="grid-meta"><span id="gridCount"></span></div>
+        <div id="kanjiGrid" class="kanji-grid"></div>
+      </div>
+
+      <div class="panel detail" id="detail">
+        <p class="empty">Pick a kanji on the left to study it.</p>
+      </div>
+    </section>
+
+    <!-- ======================================================= RECALL ===== -->
+    <section id="view-recall" class="view hidden">
+      <div id="recallSetup" class="panel setup">
+        <h2>Build a recall session</h2>
+
+        <h3>1 · What do you want to practise?</h3>
+        <div class="mode-cards" id="modeCards">
+          <label class="mode-card"><input type="radio" name="mode" value="m1" checked>
+            <b>Kanji → Meaning</b><span>漢 is shown, type the English meaning</span></label>
+          <label class="mode-card"><input type="radio" name="mode" value="m2">
+            <b>Kanji → Readings</b><span>漢 is shown, type on'yomi &amp; kun'yomi</span></label>
+          <label class="mode-card"><input type="radio" name="mode" value="m3">
+            <b>Word → Reading + Meaning</b><span>学校 is shown, type がっこう / school</span></label>
+          <label class="mode-card"><input type="radio" name="mode" value="m4">
+            <b>Meaning → Kanji</b><span>"school" is shown, type the kanji</span></label>
+          <label class="mode-card"><input type="radio" name="mode" value="m5">
+            <b>Sentence → Meaning</b><span>A sentence is shown, type what it means</span></label>
+          <label class="mode-card"><input type="radio" name="mode" value="mix">
+            <b>Mixed drill</b><span>Random mix of all five sections</span></label>
+        </div>
+
+        <h3>2 · Which kanji?</h3>
+        <div class="seg wrap" id="sourceSeg">
+          <button data-source="level" class="active">By level</button>
+          <button data-source="all">All kanji</button>
+          <button data-source="mistakes">Previous mistakes</button>
+          <button data-source="due">Due for review (SRS)</button>
+          <button data-source="group">By meaning group</button>
+          <button data-source="pick">Specific kanji</button>
+        </div>
+
+        <div class="source-opt" id="opt-level">
+          <label><input type="checkbox" value="5" checked> N5</label>
+          <label><input type="checkbox" value="4"> N4</label>
+          <label><input type="checkbox" value="3"> N3</label>
+        </div>
+        <div class="source-opt hidden" id="opt-group"><select id="groupSelect"></select></div>
+        <div class="source-opt hidden" id="opt-pick">
+          <input type="search" id="pickSearch" placeholder="Filter kanji…" autocomplete="off">
+          <div class="pick-selected" id="pickSelected"><em>none selected</em></div>
+          <div class="kanji-grid small" id="pickGrid"></div>
+        </div>
+
+        <h3>3 · Session</h3>
+        <div class="row">
+          <label>Questions <input type="number" id="sessionSize" min="5" max="100" step="5" value="15"></label>
+          <label class="chk"><input type="checkbox" id="optRomaji" checked> Auto-convert romaji → kana</label>
+          <label class="chk"><input type="checkbox" id="optAudio" checked> Speak the answer</label>
+        </div>
+
+        <p class="pool" id="poolInfo"></p>
+        <button class="primary big" id="startQuiz">Start session</button>
+      </div>
+
+      <div id="recallQuiz" class="panel quiz hidden"></div>
+      <div id="recallResult" class="panel result hidden"></div>
+    </section>
+
+    <!-- ==================================================== DASHBOARD ===== -->
+    <section id="view-dashboard" class="view hidden">
+      <div id="dashboard"></div>
+    </section>
+  </main>
+
+  <footer class="credits">
+    Data: <a href="https://www.edrdg.org/wiki/index.php/KANJIDIC_Project" target="_blank" rel="noopener">KANJIDIC2</a> ·
+    <a href="https://kanjivg.tagaini.net/" target="_blank" rel="noopener">KanjiVG</a> ·
+    <a href="https://www.edrdg.org/wiki/index.php/Tanaka_Corpus" target="_blank" rel="noopener">Tanaka Corpus</a> ·
+    <a href="https://github.com/jamsinclair/open-anki-jlpt-decks" target="_blank" rel="noopener">Open Anki JLPT decks</a>.
+    Progress is stored in this browser, and synced to your own Supabase project only if you connect one.
+  </footer>
+
+  <script type="module" src="assets/js/app.js"></script>
+</body>
+
+</html>

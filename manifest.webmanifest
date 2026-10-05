@@ -1,0 +1,13 @@
+{
+  "name": "Kanji Trainer — JLPT N5 / N4 / N3",
+  "short_name": "Kanji Trainer",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#11151c",
+  "theme_color": "#11151c",
+  "description": "Learn and recall JLPT N5-N3 kanji: stroke order, readings, vocabulary, sentences and progress tracking.",
+  "icons": [
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
